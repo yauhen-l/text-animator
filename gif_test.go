@@ -15,9 +15,9 @@ func TestGenerate(t *testing.T) {
 	defer f.Close()
 
 	//input := "(_).(_)\n(_)o(_)\n(_)0(_)"
-	input := "х\nу\nй"
+	//input := "х\nу\nй"
 	//input := "8=э\n8==э\n8===э"
-	//input := "ba \n   DUM!\n Tss"
+	input := "ba \n   DUM!\n Tss"
 	//input := "хорошо\nжорошо\nокее"
 	//input := "э\nе"
 	//input := ":|\n:|\n:P"
