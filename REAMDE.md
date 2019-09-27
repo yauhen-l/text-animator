@@ -10,10 +10,14 @@ err := DrawGif(DefaultFace(), []string{
 "   DUM!",
 " Tss",
 }, []int{10, 50, 100}, f)
-
 ```
+Arguments are:
+- `*truetype.Font` - which font to use for rendering
+- slice of shots to animate
+- slice of timings for shots in 100ths of a second
+- `io.Writer` - where to write data (in this example it is a file `out.gif`)
 
-`out.gif` file in this case will look like this:
+`out.gif` output file in this case will look like this:
 
 ![ba-DUM-Tss](https://media.giphy.com/media/eIrsVaZIYHaeX1czoh/giphy.gif)
 
