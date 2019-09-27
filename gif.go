@@ -1,3 +1,4 @@
+//go:generate go-bindata -pkg gif ./font
 package gif
 
 import (
@@ -9,7 +10,6 @@ import (
 	"image/gif"
 	"io"
 	"log"
-	"runtime"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -28,7 +28,6 @@ const hinting = font.HintingFull
 func init() {
 	var err error
 	defaultFace, err = loadFace("font/DejaVuSansMono.ttf")
-	//defaultFace, err = loadFace("font/Roboto-Regular.ttf")
 	if err != nil {
 		log.Fatalf("Failed to load face: %v", err)
 	}
@@ -68,8 +67,8 @@ func addLabel(f *truetype.Font, img draw.Image, x, y int, label string) error {
 	return err
 }
 
-func DrawGif(f *truetype.Font, shots []string, delays []int, out io.Writer) error {
-	if len(shots) != len(delays) {
+func DrawGif(f *truetype.Font, frames []string, delays []int, out io.Writer) error {
+	if len(frames) != len(delays) {
 		return errors.New("Number of shots does not match number of delays")
 	}
 
@@ -79,17 +78,11 @@ func DrawGif(f *truetype.Font, shots []string, delays []int, out io.Writer) erro
 		Hinting: hinting,
 	})
 
-	//m := f.Bounds(fixed.Int26_6(f.FUnitsPerEm()))
-
-	//sw := m.Max.X.Round() - m.Min.X.Round()
-	//	sh := m.Max.Y.Round() - m.Min.Y.Round()
-	//	fmt.Printf("%+v, sw=%v, sh=%v", m, sw, sh)
-
 	maxWidth := 0
 	maxHeight := 0
-	for _, shot := range shots {
+	for _, frame := range frames {
 		curWidth := 0
-		for _, r := range []rune(shot) {
+		for _, r := range []rune(frame) {
 			bounds, adv, ok := face.GlyphBounds(r)
 			if !ok {
 				return fmt.Errorf("No glyph for rune %v", r)
@@ -117,7 +110,7 @@ func DrawGif(f *truetype.Font, shots []string, delays []int, out io.Writer) erro
 	}
 
 	var images []*image.Paletted
-	for i, shot := range shots {
+	for i, shot := range frames {
 		img := image.NewPaletted(image.Rect(0, 0, maxWidth, height), palette)
 		images = append(images, img)
 
@@ -140,15 +133,4 @@ func loadFace(asset string) (*truetype.Font, error) {
 	}
 
 	return freetype.ParseFont(data)
-}
-
-func PrintMemUsage() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
-	log.Printf("Alloc = %v mb, \tTotalAlloc = %v mb\tSys = %v mb\tNumGC = %v", bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys), m.NumGC)
-}
-
-func bToMb(b uint64) uint64 {
-	return b / 1024 / 1024
 }

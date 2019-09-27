@@ -13,8 +13,8 @@ err := DrawGif(DefaultFace(), []string{
 ```
 Arguments are:
 - `*truetype.Font` - which font to use for rendering
-- slice of shots to animate
-- slice of timings for shots in 100ths of a second
+- slice of frames to animate
+- slice of timings for frames in 100ths of a second
 - `io.Writer` - where to write data (in this example it is a file `out.gif`)
 
 `out.gif` output file in this case will look like this:
