@@ -2,18 +2,19 @@ This library provides only one method `DrawGif` which generates animated GIF ima
 
 Here is an example:
 ```
-	f, _ := os.OpenFile("out.gif", os.O_WRONLY|os.O_CREATE, 0600)
-	defer f.Close()
+f, _ := os.OpenFile("out.gif", os.O_WRONLY|os.O_CREATE, 0600)
+defer f.Close()
 
-	input := "ba \n   DUM!\n Tss"
-	err := DrawGif(DefaultFace(), []string{
-    "ba ",
-    "   DUM!",
-    " Tss",
-    }, []int{10, 50, 100}, f)
+err := DrawGif(DefaultFace(), []string{
+"ba ",
+"   DUM!",
+" Tss",
+}, []int{10, 50, 100}, f)
 
 ```
+
 `out.gif` file in this case will look like this:
+
 ![ba-DUM-Tss](https://media.giphy.com/media/eIrsVaZIYHaeX1czoh/giphy.gif)
 
 
