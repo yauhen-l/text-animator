@@ -10,6 +10,7 @@ import (
 	"image/gif"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -51,9 +52,7 @@ func DefaultFace() *truetype.Font {
 	return defaultFace
 }
 
-func addLabel(f *truetype.Font, img draw.Image, x, y int, label string) error {
-	point := fixed.Point26_6{X: fixed.I(x), Y: fixed.I(y)}
-
+func drawFrame(f *truetype.Font, img draw.Image, lineHeight, heightShift int, frame2d []string) error {
 	c := freetype.NewContext()
 	c.SetDPI(dpi)
 	c.SetFont(f)
@@ -63,8 +62,39 @@ func addLabel(f *truetype.Font, img draw.Image, x, y int, label string) error {
 	c.SetSrc(fg)
 	c.SetHinting(hinting)
 
-	_, err := c.DrawString(label, point)
-	return err
+	for i, line := range frame2d {
+		point := fixed.Point26_6{X: fixed.I(0), Y: fixed.I(((i + 1) * lineHeight) + heightShift)}
+		_, err := c.DrawString(line, point)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func lineBounds(face font.Face, line string) (int, int) {
+	height := 0
+	width := 0
+	for _, r := range []rune(line) {
+		bounds, adv, ok := face.GlyphBounds(r)
+		if !ok {
+			log.Fatalf("No glyph for rune %v", r)
+		}
+		width += adv.Round() //bounds.Max.X.Round() - bounds.Min.X.Round()
+		sh := bounds.Max.Y.Round() - bounds.Min.Y.Round()
+
+		if sh > height {
+			height = sh
+		}
+	}
+	return width, height
 }
 
 func DrawGif(f *truetype.Font, frames []string, delays []int, out io.Writer) error {
@@ -78,45 +108,39 @@ func DrawGif(f *truetype.Font, frames []string, delays []int, out io.Writer) err
 		Hinting: hinting,
 	})
 
+	frames2d := make([][]string, len(frames))
+
 	maxWidth := 0
 	maxHeight := 0
-	for _, frame := range frames {
-		curWidth := 0
-		for _, r := range []rune(frame) {
-			bounds, adv, ok := face.GlyphBounds(r)
-			if !ok {
-				return fmt.Errorf("No glyph for rune %v", r)
-			}
-			sw := adv.Round() //bounds.Max.X.Round() - bounds.Min.X.Round()
-			sh := bounds.Max.Y.Round() - bounds.Min.Y.Round()
+	maxLineHeight := 0
+	for i, frame := range frames {
+		frames2d[i] = strings.Split(frame, "\n")
 
-			curWidth += sw
+		frameHeight := 0
+		for _, line := range frames2d[i] {
+			lineWidth, lineHeight := lineBounds(face, line)
 
-			if sh > maxHeight {
-				maxHeight = sh
-			}
-
-			//log.Printf("curWidth=%v, maxHeight=%v, adv=%v", curWidth, maxHeight, adv.Round())
+			log.Printf("Line bounds %d, %d", lineWidth, lineHeight)
+			
+			maxWidth = max(lineWidth, maxWidth)
+			frameHeight += lineHeight
+			maxLineHeight = max(maxLineHeight, lineHeight)
 		}
 
-		if curWidth > maxWidth {
-			maxWidth = curWidth
-		}
+		maxHeight = max(maxHeight, frameHeight)
 	}
 
-	height := maxHeight
-	if maxWidth > maxHeight {
-		height = maxWidth
-	}
+	imageSize := max(maxWidth, maxHeight)
+	heightShift := imageSize - maxHeight
 
 	var images []*image.Paletted
-	for i, shot := range frames {
-		img := image.NewPaletted(image.Rect(0, 0, maxWidth, height), palette)
+	for i, frame := range frames2d {
+		img := image.NewPaletted(image.Rect(0, 0, imageSize, imageSize), palette)
 		images = append(images, img)
 
-		err := addLabel(f, img, 0, height/2+maxHeight/3, shot)
+		err := drawFrame(f, img, maxLineHeight, heightShift/2, frame)
 		if err != nil {
-			return fmt.Errorf("Failed to draw label %d=%s due: %v", i, shot, err)
+			return fmt.Errorf("Failed to draw label %d=%v due: %v", i, frame, err)
 		}
 	}
 
